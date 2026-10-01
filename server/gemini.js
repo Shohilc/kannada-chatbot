@@ -10,6 +10,7 @@ const MODEL = process.env.GEMINI_MODEL || " gemini-3.6-flash";
      contents: prompt,
    config: { systemInstruction: SYSTEM_PROMPT },
    });
+   console.log(JSON.stringify(response.candidates?.[0]?.content?.parts?.map((p) => p.text)));
    return response.text;
  }
   export async function* streamGemini(prompt) {
