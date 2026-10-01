@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { askGemini } from "./gemini.js";
+import { askGemini, streamGemini } from "./gemini.js";
 
 const app = express();
 
@@ -13,6 +13,18 @@ app.get("/api/health", (req, res) => {
 });
 
 app.post("/api/chat", async (req, res) => {
+ try {
+   const { message } = req.body;
+    if (!message || typeof message !== "string") {
+     return res.status(400).json({ error: "message is required" });
+    }
+    const reply = await askGemini(message);
+    res.json({ reply });
+  } catch (err) {
+    console.error("Gemini error:", err.message);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
+  }
+});app.post("/api/chat", async (req, res) => {
  try {
    const { message } = req.body;
     if (!message || typeof message !== "string") {
