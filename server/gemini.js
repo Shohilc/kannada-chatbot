@@ -13,13 +13,18 @@ const MODEL = process.env.GEMINI_MODEL || " gemini-3.6-flash";
    console.log(JSON.stringify(response.candidates?.[0]?.content?.parts?.map((p) => p.text)));
    return response.text;
  }
-  export async function* streamGemini(prompt) {
-   const stream = await ai.models.generateContentStream({
-     model: MODEL,
-     contents: prompt,
-     config: { systemInstruction: SYSTEM_PROMPT },
-   });
+ 
+export async function* streamGemini(messages) {
+  const contents = messages.map((m) => ({
+    role: m.role === "user" ? "user" : "model",
+    parts: [{ text: m.content }],
+  }));
+  const stream = await ai.models.generateContentStream({
+    model: MODEL,
+    contents,
+    config: { systemInstruction: SYSTEM_PROMPT },
+  });
   for await (const chunk of stream) {
     if (chunk.text) yield chunk.text;
   }
- }
+}
