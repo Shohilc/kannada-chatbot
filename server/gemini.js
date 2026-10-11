@@ -22,16 +22,35 @@ export async function* streamGemini(messages) {
     role: m.role === "user" ? "user" : "model",
     parts: [{ text: m.content }],
   }));
-  const stream = await ai.models.generateContentStream({
-    model: MODEL,
-    contents,
-    config: { systemInstruction: SYSTEM_PROMPT },
-  });
-   for await (const chunk of stream) {
-    const parts = chunk.candidates?.[0]?.content?.parts ?? [];
-    for (const part of parts) {
-      if (!part.text) continue;
-      yield { type: part.thought ? "thought" : "answer", text: part.text };
+
+  for (let attempt = 0; ; attempt++) {
+    let started = false;
+    try {
+      const stream = await ai.models.generateContentStream({
+        model: MODEL,
+        contents,
+        config: {
+          systemInstruction: SYSTEM_PROMPT,
+          thinkingConfig: {
+            includeThoughts: true,
+            thinkingLevel: ThinkingLevel.LOW,
+          },
+        },
+      });
+
+      for await (const chunk of stream) {
+        const parts = chunk.candidates?.[0]?.content?.parts ?? [];
+        for (const part of parts) {
+          if (!part.text) continue;
+          started = true;
+          yield { type: part.thought ? "thought" : "answer", text: part.text };
+        }
+      }
+      return;
+    } catch (err) {
+      const retryable = [429, 500, 503].includes(err.status);
+      if (started || !retryable || attempt >= 2) throw err;
+      await sleep(1000 * 2 ** attempt);
     }
   }
- }
+}
