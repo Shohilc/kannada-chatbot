@@ -61,8 +61,8 @@ app.post("/api/chat/stream", async (req, res) => {
   };
 
   try {
-    for await (const text of streamGemini(messages.slice(-20))) {
-      send("answer", { text });
+     for await (const { type, text } of streamGemini(messages.slice(-20))) {
+     send(type, { text });
     }
     send("done", {});
   } catch (err) {
